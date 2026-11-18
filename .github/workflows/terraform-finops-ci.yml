@@ -1,0 +1,30 @@
+name: Terraform Security & FinOps Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-infra:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: Terraform Format & Validate
+        working-directory: ./terraform
+        run: |
+          terraform fmt -check
+          terraform init -backend=false
+          terraform validate
+
+      - name: FinOps Tag Enforcement Check
+        working-directory: ./terraform
+        run: |
+          grep -q "CostCenter" versions.tf || (echo "ERROR: Mandatory FinOps CostCenter tag missing!" && exit 1)
+          echo "FinOps CostCenter governance check passed."
